@@ -370,7 +370,7 @@ router.post("/research", async (req, res): Promise<void> => {
     }));
 
     const geminiResponse = await fetch(
-      "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent",
+      "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash-lite:generateContent",
       {
         method: "POST",
         headers: {
@@ -434,6 +434,12 @@ router.post("/research", async (req, res): Promise<void> => {
           code: "free_ai_limit_reached",
           error:
             "Gemini's free-tier limit has been reached. No paid fallback was used; try again after the limit resets.",
+        });
+      } else if (geminiResponse.status === 503) {
+        res.status(503).json({
+          code: "gemini_temporarily_unavailable",
+          error:
+            "The free Gemini model is temporarily busy. No paid fallback was used; try again later.",
         });
       } else if (
         geminiResponse.status === 401 ||

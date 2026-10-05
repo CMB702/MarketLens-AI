@@ -35,7 +35,7 @@ const copy = {
     growing: 'बढ़ता हुआ', stable: 'स्थिर', declining: 'घटता हुआ', mixed: 'मिला-जुला', unclear: 'अस्पष्ट',
     high: 'ऊँचा', medium: 'मध्यम', low: 'कम', promising: 'लाभ की संभावना', uncertain: 'अनिश्चित', challenging: 'चुनौतीपूर्ण',
     print: 'प्रिंट / PDF', copy: 'सारांश कॉपी करें', copied: 'कॉपी हो गया', newSearch: 'नई research', readSource: 'स्रोत खोलें',
-    errorTitle: 'रिसर्च पूरी नहीं हो पाई', errorText: 'कनेक्शन या source search में समस्या हुई। दोबारा कोशिश करें; आपका लिखा हुआ idea सुरक्षित है।', freeLimitError: 'Free quota या rate limit पूरी हो गई है। कोई paid fallback नहीं चलेगा; quota reset होने के बाद फिर कोशिश करें।', setupError: 'Free Tavily और Gemini keys Replit Secrets में जोड़ें। Paid billing enable न करें।', unitEconomicsError: 'Gross margin निकालने के लिए selling price और direct cost दोनों भरें, या दोनों खाली छोड़ें।', noSourcesError: 'इस idea के लिए साफ़ web sources नहीं मिले। Idea या country को थोड़ा specific करके देखें।', retry: 'फिर कोशिश करें',
+    errorTitle: 'रिसर्च पूरी नहीं हो पाई', errorText: 'कनेक्शन या source search में समस्या हुई। दोबारा कोशिश करें; आपका लिखा हुआ idea सुरक्षित है।', freeLimitError: 'Free quota या rate limit पूरी हो गई है। कोई paid fallback नहीं चलेगा; quota reset होने के बाद फिर कोशिश करें।', geminiBusyError: 'Gemini का free model अभी व्यस्त है। कोई paid fallback नहीं चला; थोड़ी देर बाद फिर कोशिश करें।', setupError: 'Free Tavily और Gemini keys Replit Secrets में जोड़ें। Paid billing enable न करें।', unitEconomicsError: 'Gross margin निकालने के लिए selling price और direct cost दोनों भरें, या दोनों खाली छोड़ें।', noSourcesError: 'इस idea के लिए साफ़ web sources नहीं मिले। Idea या country को थोड़ा specific करके देखें।', retry: 'फिर कोशिश करें',
     estimateNote: 'Market size एक अनुमान है; इसे sourced market fact न समझें।', margin: 'Gross margin', marginNote: 'यह अनुमान आपके दिए गए selling price और direct cost पर आधारित है।',
     domain: 'Domain', noPublishedDate: 'तारीख उपलब्ध नहीं', pricePosition: 'Price position', positioning: 'Positioning', offer: 'Offer', severity: 'गंभीरता',
   },
@@ -58,7 +58,7 @@ const copy = {
     growing: 'Growing', stable: 'Stable', declining: 'Declining', mixed: 'Mixed', unclear: 'Unclear',
     high: 'High', medium: 'Medium', low: 'Low', promising: 'Promising', uncertain: 'Uncertain', challenging: 'Challenging',
     print: 'Print / PDF', copy: 'Copy summary', copied: 'Copied', newSearch: 'New research', readSource: 'Open source',
-    errorTitle: 'Research could not be completed', errorText: 'There was a problem with the connection or source search. Try again; your idea is still here.', freeLimitError: 'A free quota or rate limit was reached. No paid fallback will run; try again after the quota resets.', setupError: 'Add free Tavily and Gemini keys in Replit Secrets. Do not enable paid billing.', unitEconomicsError: 'Enter both a selling price and a direct cost to calculate gross margin, or leave both blank.', noSourcesError: 'No usable web sources were found. Try a more specific idea or country.', retry: 'Try again',
+    errorTitle: 'Research could not be completed', errorText: 'There was a problem with the connection or source search. Try again; your idea is still here.', freeLimitError: 'A free quota or rate limit was reached. No paid fallback will run; try again after the quota resets.', geminiBusyError: 'The free Gemini model is temporarily busy. No paid fallback ran; try again later.', setupError: 'Add free Tavily and Gemini keys in Replit Secrets. Do not enable paid billing.', unitEconomicsError: 'Enter both a selling price and a direct cost to calculate gross margin, or leave both blank.', noSourcesError: 'No usable web sources were found. Try a more specific idea or country.', retry: 'Try again',
     estimateNote: 'Market size is an estimate, not a sourced market fact.', margin: 'Gross margin', marginNote: 'Estimate based on the selling price and direct cost you entered.',
     domain: 'Domain', noPublishedDate: 'Date unavailable', pricePosition: 'Price position', positioning: 'Positioning', offer: 'Offer', severity: 'Severity',
   },
@@ -81,13 +81,15 @@ function Home() {
   const errorCode = research.error?.data?.code;
   const errorText = errorCode === 'free_search_quota_exhausted' || errorCode === 'free_ai_limit_reached'
     ? t.freeLimitError
-    : errorCode === 'free_setup_missing' || errorCode === 'tavily_key_invalid' || errorCode === 'gemini_key_invalid'
-      ? t.setupError
-      : errorCode === 'incomplete_unit_economics'
-        ? t.unitEconomicsError
-        : errorCode === 'no_sources'
-          ? t.noSourcesError
-          : t.errorText;
+    : errorCode === 'gemini_temporarily_unavailable'
+      ? t.geminiBusyError
+      : errorCode === 'free_setup_missing' || errorCode === 'tavily_key_invalid' || errorCode === 'gemini_key_invalid'
+        ? t.setupError
+        : errorCode === 'incomplete_unit_economics'
+          ? t.unitEconomicsError
+          : errorCode === 'no_sources'
+            ? t.noSourcesError
+            : t.errorText;
 
   useEffect(() => {
     if (report) window.scrollTo({ top: 0, behavior: 'smooth' });
