@@ -8,6 +8,7 @@
 
 export * from './competitor';
 export * from './customerNeed';
+export * from './errorResponse';
 export * from './healthStatus';
 export * from './marketOutlook';
 export * from './marketOutlookConfidence';

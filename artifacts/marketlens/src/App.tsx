@@ -23,7 +23,8 @@ const copy = {
     country: 'बाज़ार / देश', marketIndia: 'भारत', marketUs: 'अमेरिका', marketUk: 'यूनाइटेड किंगडम', marketUae: 'संयुक्त अरब अमीरात', marketOther: 'अन्य',
     options: 'वैकल्पिक: अपने unit economics जोड़ें', price: 'Selling price', cost: 'Direct cost', currency: 'Currency',
     submit: 'रिसर्च शुरू करें', working: 'Sources खोज रहे हैं…', queryTip: 'Business idea जितना साफ़ होगा, brief उतना उपयोगी होगा।',
-    trust: 'किसी भी idea के लिए', trustSub: 'Product, service या local business', sources: 'हर दावे के साथ स्रोत', sourcesSub: 'Evidence और अनुमान अलग-अलग', noAccount: 'कोई account नहीं चाहिए',
+    providerNotice: 'Free tier के लिए यह idea और source snippets Tavily और Gemini को भेजे जाएंगे। Gemini free-tier prompts का उपयोग अपने products सुधारने के लिए कर सकता है।',
+    trust: 'किसी भी idea के लिए', trustSub: 'Product, service या local business', sourceProof: 'हर दावे के साथ स्रोत', sourcesSub: 'Evidence और अनुमान अलग-अलग', noAccount: 'कोई account नहीं चाहिए',
     emptyEyebrow: 'अभी शुरुआत करें', emptyTitle: 'आपका अगला निर्णय, बेहतर जानकारी के साथ।',
     emptyText: 'ऊपर कोई भी business idea लिखें। MarketLens मौजूदा web sources से बाज़ार, ग्राहक, प्रतिस्पर्धा और economics का एक structured brief बनाएगा।',
     chips: ['Cloud kitchen for office lunches', 'Tier 2 शहरों में EV servicing', 'हिंदी में bookkeeping app'],
@@ -34,7 +35,7 @@ const copy = {
     growing: 'बढ़ता हुआ', stable: 'स्थिर', declining: 'घटता हुआ', mixed: 'मिला-जुला', unclear: 'अस्पष्ट',
     high: 'ऊँचा', medium: 'मध्यम', low: 'कम', promising: 'लाभ की संभावना', uncertain: 'अनिश्चित', challenging: 'चुनौतीपूर्ण',
     print: 'प्रिंट / PDF', copy: 'सारांश कॉपी करें', copied: 'कॉपी हो गया', newSearch: 'नई research', readSource: 'स्रोत खोलें',
-    errorTitle: 'रिसर्च पूरी नहीं हो पाई', errorText: 'कनेक्शन या source search में समस्या हुई। दोबारा कोशिश करें; आपका लिखा हुआ idea सुरक्षित है।', retry: 'फिर कोशिश करें',
+    errorTitle: 'रिसर्च पूरी नहीं हो पाई', errorText: 'कनेक्शन या source search में समस्या हुई। दोबारा कोशिश करें; आपका लिखा हुआ idea सुरक्षित है।', freeLimitError: 'Free quota या rate limit पूरी हो गई है। कोई paid fallback नहीं चलेगा; quota reset होने के बाद फिर कोशिश करें।', setupError: 'Free Tavily और Gemini keys Replit Secrets में जोड़ें। Paid billing enable न करें।', unitEconomicsError: 'Gross margin निकालने के लिए selling price और direct cost दोनों भरें, या दोनों खाली छोड़ें।', noSourcesError: 'इस idea के लिए साफ़ web sources नहीं मिले। Idea या country को थोड़ा specific करके देखें।', retry: 'फिर कोशिश करें',
     estimateNote: 'Market size एक अनुमान है; इसे sourced market fact न समझें।', margin: 'Gross margin', marginNote: 'यह अनुमान आपके दिए गए selling price और direct cost पर आधारित है।',
     domain: 'Domain', noPublishedDate: 'तारीख उपलब्ध नहीं', pricePosition: 'Price position', positioning: 'Positioning', offer: 'Offer', severity: 'गंभीरता',
   },
@@ -45,7 +46,8 @@ const copy = {
     country: 'Market / country', marketIndia: 'India', marketUs: 'United States', marketUk: 'United Kingdom', marketUae: 'United Arab Emirates', marketOther: 'Other',
     options: 'Optional: add your unit economics', price: 'Selling price', cost: 'Direct cost', currency: 'Currency',
     submit: 'Start research', working: 'Finding sources…', queryTip: 'A specific business idea makes for a more useful brief.',
-    trust: 'Any kind of idea', trustSub: 'Product, service, or local business', sources: 'Sources behind every claim', sourcesSub: 'Evidence and estimates stay distinct', noAccount: 'No account required',
+    providerNotice: 'Your idea and source snippets are sent to Tavily and Gemini for the free-tier research. Gemini may use free-tier prompts to improve its products.',
+    trust: 'Any kind of idea', trustSub: 'Product, service, or local business', sourceProof: 'Sources behind every claim', sourcesSub: 'Evidence and estimates stay distinct', noAccount: 'No account required',
     emptyEyebrow: 'Start with a question', emptyTitle: 'Make your next decision with better information.',
     emptyText: 'Enter any business idea above. MarketLens searches current public sources to build a structured brief on market, customers, competition, and economics.',
     chips: ['Cloud kitchen for office lunches', 'EV servicing in tier 2 cities', 'Hindi bookkeeping app'],
@@ -56,7 +58,7 @@ const copy = {
     growing: 'Growing', stable: 'Stable', declining: 'Declining', mixed: 'Mixed', unclear: 'Unclear',
     high: 'High', medium: 'Medium', low: 'Low', promising: 'Promising', uncertain: 'Uncertain', challenging: 'Challenging',
     print: 'Print / PDF', copy: 'Copy summary', copied: 'Copied', newSearch: 'New research', readSource: 'Open source',
-    errorTitle: 'Research could not be completed', errorText: 'There was a problem with the connection or source search. Try again; your idea is still here.', retry: 'Try again',
+    errorTitle: 'Research could not be completed', errorText: 'There was a problem with the connection or source search. Try again; your idea is still here.', freeLimitError: 'A free quota or rate limit was reached. No paid fallback will run; try again after the quota resets.', setupError: 'Add free Tavily and Gemini keys in Replit Secrets. Do not enable paid billing.', unitEconomicsError: 'Enter both a selling price and a direct cost to calculate gross margin, or leave both blank.', noSourcesError: 'No usable web sources were found. Try a more specific idea or country.', retry: 'Try again',
     estimateNote: 'Market size is an estimate, not a sourced market fact.', margin: 'Gross margin', marginNote: 'Estimate based on the selling price and direct cost you entered.',
     domain: 'Domain', noPublishedDate: 'Date unavailable', pricePosition: 'Price position', positioning: 'Positioning', offer: 'Offer', severity: 'Severity',
   },
@@ -73,9 +75,19 @@ function Home() {
   const [showEconomics, setShowEconomics] = useState(false);
   const [copied, setCopied] = useState(false);
   const research = useCreateResearch();
-  const health = useHealthCheck({ query: { staleTime: 60_000, refetchOnWindowFocus: false } });
+  const health = useHealthCheck();
   const t = copy[lang];
   const report = research.data as ResearchReport | undefined;
+  const errorCode = research.error?.data?.code;
+  const errorText = errorCode === 'free_search_quota_exhausted' || errorCode === 'free_ai_limit_reached'
+    ? t.freeLimitError
+    : errorCode === 'free_setup_missing' || errorCode === 'tavily_key_invalid' || errorCode === 'gemini_key_invalid'
+      ? t.setupError
+      : errorCode === 'incomplete_unit_economics'
+        ? t.unitEconomicsError
+        : errorCode === 'no_sources'
+          ? t.noSourcesError
+          : t.errorText;
 
   useEffect(() => {
     if (report) window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -152,7 +164,7 @@ function Home() {
                 <label className="block text-xs font-semibold text-muted-foreground">{t.country}
                   <span className="relative mt-1.5 block">
                     <Globe2 size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
-                    <select data-testid="select-country" value={country} onChange={(e) => setCountry(e.target.value)} className="h-11 w-full appearance-none rounded-lg border border-border bg-card pl-9 pr-9 text-sm text-foreground outline-none focus:border-primary">
+                     <select data-testid="select-country" value={country} onChange={(e) => { const value = e.target.value; setCountry(value); const localCurrency = ({ India: 'INR', 'United States': 'USD', 'United Kingdom': 'GBP', 'United Arab Emirates': 'AED' } as Record<string, string>)[value]; if (localCurrency) setCurrency(localCurrency); }} className="h-11 w-full appearance-none rounded-lg border border-border bg-card pl-9 pr-9 text-sm text-foreground outline-none focus:border-primary">
                       <option value="India">{t.marketIndia}</option><option value="United States">{t.marketUs}</option><option value="United Kingdom">{t.marketUk}</option><option value="United Arab Emirates">{t.marketUae}</option><option value="Other">{t.marketOther}</option>
                     </select><ChevronDown size={15} className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
                   </span>
@@ -168,12 +180,13 @@ function Home() {
                 </div>
               </div>
               <p className="mt-4 text-[11px] text-muted-foreground">{t.queryTip}</p>
+              <p className="mt-2 text-[10px] leading-4 text-muted-foreground">{t.providerNotice}</p>
             </form>
 
             {research.isError && <div role="alert" data-testid="status-research-error" className="mt-4 flex items-start gap-3 rounded-xl border border-[#e7b8a6] bg-[#fff0e9] p-4 text-[#733c2d]">
               <CircleAlert size={19} className="mt-0.5 shrink-0" />
-              <div className="flex-1"><p className="font-bold">{t.errorTitle}</p><p className="mt-1 text-sm leading-5">{t.errorText}</p></div>
-              <button type="button" data-testid="button-retry-research" onClick={() => submit()} className="shrink-0 rounded-lg bg-[#733c2d] px-3 py-2 text-xs font-bold text-white hover:opacity-90">{t.retry}</button>
+              <div className="flex-1"><p className="font-bold">{t.errorTitle}</p><p className="mt-1 text-sm leading-5">{errorText}</p></div>
+              {errorCode !== 'free_search_quota_exhausted' && errorCode !== 'free_ai_limit_reached' && <button type="button" data-testid="button-retry-research" onClick={() => submit()} className="shrink-0 rounded-lg bg-[#733c2d] px-3 py-2 text-xs font-bold text-white hover:opacity-90">{t.retry}</button>}
             </div>}
           </div>
 
@@ -182,7 +195,7 @@ function Home() {
               <p className="text-sm font-bold">{t.trust}</p><p className="mt-1 text-xs leading-5 text-muted-foreground">{t.trustSub}</p>
             </div>
             <div className="border-l-2 border-primary/35 pl-4">
-              <p className="text-sm font-bold">{t.sources}</p><p className="mt-1 text-xs leading-5 text-muted-foreground">{t.sourcesSub}</p>
+              <p className="text-sm font-bold">{t.sourceProof}</p><p className="mt-1 text-xs leading-5 text-muted-foreground">{t.sourcesSub}</p>
             </div>
             <div className="border-l-2 border-[#a4ae81] pl-4">
               <p className="text-sm font-bold">{t.noAccount}</p>

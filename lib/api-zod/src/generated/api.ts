@@ -32,7 +32,7 @@ export const createResearchBodyCurrencyMax = 3;
 
 
 export const createResearchBodyCurrencyRegExp = new RegExp('^[A-Z]{3}$');
-export const createResearchBodySellingPriceMin = 0;
+export const createResearchBodySellingPriceMin = 0.01;
 
 export const createResearchBodyDirectCostMin = 0;
 

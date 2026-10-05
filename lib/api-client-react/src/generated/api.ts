@@ -20,6 +20,7 @@ import type {
 } from '@tanstack/react-query';
 
 import type {
+  ErrorResponse,
   HealthStatus,
   ResearchInput,
   ResearchReport
@@ -173,7 +174,7 @@ return customFetch<ResearchReport>(getCreateResearchUrl(),
 
 export const getCreateResearchMutationKey = () => ['createResearch'] as const;
 
-export const getCreateResearchMutationOptions = <TError = ErrorType<void>,
+export const getCreateResearchMutationOptions = <TError = ErrorType<ErrorResponse>,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createResearch>>, TError,CreateResearchMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
 ): UseMutationOptions<Awaited<ReturnType<typeof createResearch>>, TError,CreateResearchMutationVariables, TContext> => {
 
@@ -202,13 +203,13 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
     export type CreateResearchMutationResult = NonNullable<Awaited<ReturnType<typeof createResearch>>>
     export type CreateResearchMutationBody = BodyType<ResearchInput>
-    export type CreateResearchMutationError = ErrorType<void>
+    export type CreateResearchMutationError = ErrorType<ErrorResponse>
     export type CreateResearchMutationVariables = {data: BodyType<ResearchInput>}
 
     /**
  * @summary Research a product, service, or business idea
  */
-export const useCreateResearch = <TError = ErrorType<void>,
+export const useCreateResearch = <TError = ErrorType<ErrorResponse>,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createResearch>>, TError,CreateResearchMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
  ): UseMutationResult<
         Awaited<ReturnType<typeof createResearch>>,

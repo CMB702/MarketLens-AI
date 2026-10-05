@@ -26,7 +26,7 @@ export interface ResearchInput {
      * @pattern ^[A-Z]{3}$
      */
   currency?: string;
-  /** @minimum 0 */
+  /** @minimum 0.01 */
   sellingPrice?: number;
   /** @minimum 0 */
   directCost?: number;

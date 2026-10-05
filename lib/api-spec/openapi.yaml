@@ -47,8 +47,28 @@ paths:
                 $ref: "#/components/schemas/ResearchReport"
         "400":
           description: Invalid research request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "429":
+          description: A free provider quota or rate limit was reached
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
         "502":
-          description: Research provider failed or returned unusable data
+          description: A provider failed or returned unusable data
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "503":
+          description: Required free-tier provider setup is unavailable
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
 components:
   schemas:
     HealthStatus:
@@ -81,11 +101,20 @@ components:
           pattern: "^[A-Z]{3}$"
         sellingPrice:
           type: number
-          minimum: 0
+          minimum: 0.01
         directCost:
           type: number
           minimum: 0
       required: [query, country, language]
+    ErrorResponse:
+      type: object
+      additionalProperties: false
+      properties:
+        code:
+          type: string
+        error:
+          type: string
+      required: [code, error]
     ResearchSource:
       type: object
       additionalProperties: false
