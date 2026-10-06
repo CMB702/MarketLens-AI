@@ -2,10 +2,12 @@ import { useState, useEffect, type FormEvent, type ReactNode } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { useCreateResearch, useHealthCheck } from '@workspace/api-client-react';
 import type { ResearchReport, ResearchInput } from '@workspace/api-client-react';
-import { ArrowDown, ArrowRight, ArrowUpRight, BookOpen, Check, ChevronDown, CircleAlert, Compass, ExternalLink, FileText, Globe2, LoaderCircle, Search, ShieldCheck, Sparkles, TrendingUp, Wallet, X } from 'lucide-react';
+import { ArrowDown, ArrowRight, ArrowUpRight, BookOpen, Check, ChevronDown, CircleAlert, Clock3, Compass, ExternalLink, FileText, Globe2, LoaderCircle, Moon, Search, ShieldCheck, Sparkles, Sun, TrendingUp, Wallet, X } from 'lucide-react';
 import { ErrorBoundary } from '@/components/error-boundary';
+import { HistoryPanel } from '@/components/history-panel';
 import { Toaster } from '@/components/ui/toaster';
 import { TooltipProvider } from '@/components/ui/tooltip';
+import { useReportHistory } from '@/hooks/use-report-history';
 import NotFound from '@/pages/not-found';
 import { Route, Switch, useLocation, Router as WouterRouter } from 'wouter';
 
@@ -38,6 +40,8 @@ const copy = {
     errorTitle: 'रिसर्च पूरी नहीं हो पाई', errorText: 'कनेक्शन या source search में समस्या हुई। दोबारा कोशिश करें; आपका लिखा हुआ idea सुरक्षित है।', freeLimitError: 'Free quota या rate limit पूरी हो गई है। कोई paid fallback नहीं चलेगा; quota reset होने के बाद फिर कोशिश करें।', geminiBusyError: 'Gemini का free model अभी व्यस्त है। कोई paid fallback नहीं चला; थोड़ी देर बाद फिर कोशिश करें।', setupError: 'Free Tavily और Gemini keys Replit Secrets में जोड़ें। Paid billing enable न करें।', unitEconomicsError: 'Gross margin निकालने के लिए selling price और direct cost दोनों भरें, या दोनों खाली छोड़ें।', noSourcesError: 'इस idea के लिए साफ़ web sources नहीं मिले। Idea या country को थोड़ा specific करके देखें।', retry: 'फिर कोशिश करें',
     estimateNote: 'Market size एक अनुमान है; इसे sourced market fact न समझें।', margin: 'Gross margin', marginNote: 'यह अनुमान आपके दिए गए selling price और direct cost पर आधारित है।',
     domain: 'Domain', noPublishedDate: 'तारीख उपलब्ध नहीं', pricePosition: 'Price position', positioning: 'Positioning', offer: 'Offer', severity: 'गंभीरता',
+    history: 'रिपोर्ट इतिहास', themeDark: 'डार्क मोड चालू करें', themeLight: 'लाइट मोड चालू करें',
+    validationPlan: 'कम खर्च में पहले जाँचें', validationHypothesis: 'जाँचने वाली मान्यता', validationTest: 'कम खर्च वाला test', validationSignal: 'सफलता का संकेत', validationNote: 'ये शुरुआती सुझाव हैं, sourced facts नहीं। पहले से तय करें कि किस नतीजे पर आगे बढ़ेंगे।',
   },
   en: {
     eyebrow: 'YOUR MARKET RESEARCH DESK', headingA: 'One idea.', headingB: 'The full picture.',
@@ -61,6 +65,8 @@ const copy = {
     errorTitle: 'Research could not be completed', errorText: 'There was a problem with the connection or source search. Try again; your idea is still here.', freeLimitError: 'A free quota or rate limit was reached. No paid fallback will run; try again after the quota resets.', geminiBusyError: 'The free Gemini model is temporarily busy. No paid fallback ran; try again later.', setupError: 'Add free Tavily and Gemini keys in Replit Secrets. Do not enable paid billing.', unitEconomicsError: 'Enter both a selling price and a direct cost to calculate gross margin, or leave both blank.', noSourcesError: 'No usable web sources were found. Try a more specific idea or country.', retry: 'Try again',
     estimateNote: 'Market size is an estimate, not a sourced market fact.', margin: 'Gross margin', marginNote: 'Estimate based on the selling price and direct cost you entered.',
     domain: 'Domain', noPublishedDate: 'Date unavailable', pricePosition: 'Price position', positioning: 'Positioning', offer: 'Offer', severity: 'Severity',
+    history: 'Report history', themeDark: 'Turn on dark mode', themeLight: 'Turn on light mode',
+    validationPlan: 'Validate before you invest', validationHypothesis: 'Hypothesis to test', validationTest: 'Free or low-cost test', validationSignal: 'Success signal', validationNote: 'These are starting suggestions, not sourced facts. Decide what result would justify moving forward before running each test.',
   },
 };
 
@@ -74,10 +80,23 @@ function Home() {
   const [directCost, setDirectCost] = useState('');
   const [showEconomics, setShowEconomics] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [historyOpen, setHistoryOpen] = useState(false);
+  const [selectedHistoryReport, setSelectedHistoryReport] = useState<ResearchReport | null>(null);
+  const [theme, setTheme] = useState<'light' | 'dark'>(() => {
+    try {
+      const savedTheme = window.localStorage.getItem('marketlens:theme:v1');
+      if (savedTheme === 'light' || savedTheme === 'dark') return savedTheme;
+    } catch {
+      // Use the operating-system preference if storage is unavailable.
+    }
+    return typeof window !== 'undefined' && window.matchMedia?.('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+  });
+  const { history, storageUnavailable, saveReport, removeReport } = useReportHistory();
   const research = useCreateResearch();
   const health = useHealthCheck();
   const t = copy[lang];
-  const report = research.data as ResearchReport | undefined;
+  const resultReport = research.data as ResearchReport | undefined;
+  const report = selectedHistoryReport ?? resultReport;
   const errorCode = research.error?.data?.code;
   const errorText = errorCode === 'free_search_quota_exhausted' || errorCode === 'free_ai_limit_reached'
     ? t.freeLimitError
@@ -95,6 +114,22 @@ function Home() {
     if (report) window.scrollTo({ top: 0, behavior: 'smooth' });
   }, [report]);
 
+  useEffect(() => {
+    document.documentElement.classList.toggle('dark', theme === 'dark');
+    document.documentElement.style.colorScheme = theme;
+    try {
+      window.localStorage.setItem('marketlens:theme:v1', theme);
+    } catch {
+      // Theme still applies for this session when storage is unavailable.
+    }
+  }, [theme]);
+
+  useEffect(() => {
+    if (!resultReport) return;
+    setSelectedHistoryReport(null);
+    saveReport(resultReport);
+  }, [resultReport, saveReport]);
+
   const submit = (event?: FormEvent<HTMLFormElement>) => {
     event?.preventDefault();
     const cleanQuery = query.trim();
@@ -107,13 +142,41 @@ function Home() {
       ...(sellingPrice !== '' && Number.isFinite(Number(sellingPrice)) ? { sellingPrice: Number(sellingPrice) } : {}),
       ...(directCost !== '' && Number.isFinite(Number(directCost)) ? { directCost: Number(directCost) } : {}),
     };
+    setSelectedHistoryReport(null);
     research.mutate({ data: payload });
   };
 
   const startNew = () => {
     research.reset();
+    setSelectedHistoryReport(null);
+    setHistoryOpen(false);
     setQuery('');
     window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const openSavedReport = (savedReport: ResearchReport) => {
+    research.reset();
+    setSelectedHistoryReport(savedReport);
+    setQuery(savedReport.subject);
+    const savedCountry = savedReport.country;
+    if (['India', 'United States', 'United Kingdom', 'United Arab Emirates'].includes(savedCountry)) {
+      setCountry(savedCountry);
+      setOtherCountry('');
+    } else {
+      setCountry('Other');
+      setOtherCountry(savedCountry);
+    }
+    if (savedReport.profitability?.currency) setCurrency(savedReport.profitability.currency);
+    setHistoryOpen(false);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const deleteSavedReport = (reportId: string) => {
+    removeReport(reportId);
+    if (selectedHistoryReport?.id === reportId) {
+      setSelectedHistoryReport(null);
+      research.reset();
+    }
   };
 
   const copySummary = async () => {
@@ -136,6 +199,29 @@ function Home() {
         </a>
         <div className="flex items-center gap-3">
           <span data-testid="status-api-health" className="hidden items-center gap-1.5 text-xs text-muted-foreground sm:flex"><span className={`h-1.5 w-1.5 rounded-full ${health.isSuccess ? 'bg-[#6c9663]' : health.isError ? 'bg-[#b76548]' : 'bg-[#c7964f]'}`} /><ShieldCheck size={14} /> {health.isSuccess ? (lang === 'hi' ? 'Research desk तैयार' : 'Research desk ready') : health.isError ? (lang === 'hi' ? 'सर्वर से जुड़ नहीं पाया' : 'Server unavailable') : (lang === 'hi' ? 'जुड़ रहा है…' : 'Connecting…')}</span>
+          <button
+            type="button"
+            data-testid="button-toggle-history"
+            aria-label={`${t.history} (${history.length})`}
+            aria-controls="report-history"
+            aria-expanded={historyOpen}
+            onClick={() => setHistoryOpen((open) => !open)}
+            className="relative grid h-9 w-9 place-items-center rounded-lg border border-border bg-card text-muted-foreground transition-colors hover:text-foreground"
+          >
+            <Clock3 size={16} />
+            {history.length > 0 && <span className="absolute -right-1 -top-1 grid h-4 min-w-4 place-items-center rounded-full bg-primary px-1 text-[9px] font-bold text-primary-foreground">{history.length > 20 ? '20+' : history.length}</span>}
+            <span className="sr-only">{t.history}</span>
+          </button>
+          <button
+            type="button"
+            data-testid="button-toggle-theme"
+            aria-label={theme === 'dark' ? t.themeLight : t.themeDark}
+            aria-pressed={theme === 'dark'}
+            onClick={() => setTheme((current) => current === 'dark' ? 'light' : 'dark')}
+            className="grid h-9 w-9 place-items-center rounded-lg border border-border bg-card text-muted-foreground transition-colors hover:text-foreground"
+          >
+            {theme === 'dark' ? <Sun size={16} /> : <Moon size={16} />}
+          </button>
           <div className="flex items-center rounded-full border border-border bg-card p-1" aria-label="Language">
             <button type="button" data-testid="button-language-hi" onClick={() => setLang('hi')} className={`rounded-full px-3 py-1.5 text-xs font-semibold transition-colors ${lang === 'hi' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground'}`}>हि</button>
             <button type="button" data-testid="button-language-en" onClick={() => setLang('en')} className={`rounded-full px-3 py-1.5 text-xs font-semibold transition-colors ${lang === 'en' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground'}`}>EN</button>
@@ -143,14 +229,24 @@ function Home() {
         </div>
       </header>
 
+      <HistoryPanel
+        open={historyOpen}
+        lang={lang}
+        reports={history}
+        storageUnavailable={storageUnavailable}
+        onClose={() => setHistoryOpen(false)}
+        onSelect={openSavedReport}
+        onDelete={deleteSavedReport}
+      />
+
       <section className="mx-auto max-w-[1240px] px-5 pb-12 pt-7 sm:px-8 sm:pt-12">
         <div className="grid gap-9 lg:grid-cols-[1fr_300px] lg:gap-14">
           <div className="enter">
             <p className="mb-4 flex items-center gap-2 text-[11px] font-bold uppercase tracking-[.2em] text-primary"><span className="h-px w-7 bg-accent" />{t.eyebrow}</p>
-            <h1 className="font-display text-[clamp(42px,7vw,76px)] font-extrabold leading-[.98] tracking-[-.065em] text-[#163d34]">{t.headingA}<br /><span className="text-[#bd6a31]">{t.headingB}</span></h1>
+            <h1 className="font-display text-[clamp(42px,7vw,76px)] font-extrabold leading-[.98] tracking-[-.065em] text-brand-title">{t.headingA}<br /><span className="text-accent-title">{t.headingB}</span></h1>
             <p className="mt-5 max-w-[610px] text-base leading-7 text-muted-foreground sm:text-[17px]">{t.intro}</p>
 
-            <form onSubmit={submit} className="mt-8 rounded-[22px] border border-[#ded7c8] bg-[#fbf9f2] p-4 shadow-[0_18px_60px_rgba(41,53,41,.08)] sm:p-6">
+            <form onSubmit={submit} className="mt-8 rounded-[22px] border border-panel-border bg-panel-card p-4 shadow-[0_18px_60px_rgba(41,53,41,.08)] sm:p-6">
               <label htmlFor="idea" className="mb-2 block text-sm font-bold">{t.queryLabel}</label>
               <div className="flex flex-col gap-3 sm:flex-row">
                 <div className="flex min-w-0 flex-1 items-center gap-3 rounded-xl border border-border bg-card px-4 focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/10">
@@ -185,10 +281,10 @@ function Home() {
               <p className="mt-2 text-[10px] leading-4 text-muted-foreground">{t.providerNotice}</p>
             </form>
 
-            {research.isError && <div role="alert" data-testid="status-research-error" className="mt-4 flex items-start gap-3 rounded-xl border border-[#e7b8a6] bg-[#fff0e9] p-4 text-[#733c2d]">
+            {research.isError && <div role="alert" data-testid="status-research-error" className="mt-4 flex items-start gap-3 rounded-xl border border-risk-border bg-surface-risk p-4 text-risk-ink">
               <CircleAlert size={19} className="mt-0.5 shrink-0" />
               <div className="flex-1"><p className="font-bold">{t.errorTitle}</p><p className="mt-1 text-sm leading-5">{errorText}</p></div>
-              {errorCode !== 'free_search_quota_exhausted' && errorCode !== 'free_ai_limit_reached' && <button type="button" data-testid="button-retry-research" onClick={() => submit()} className="shrink-0 rounded-lg bg-[#733c2d] px-3 py-2 text-xs font-bold text-white hover:opacity-90">{t.retry}</button>}
+              {errorCode !== 'free_search_quota_exhausted' && errorCode !== 'free_ai_limit_reached' && <button type="button" data-testid="button-retry-research" onClick={() => submit()} className="shrink-0 rounded-lg bg-risk-ink px-3 py-2 text-xs font-bold text-white hover:opacity-90">{t.retry}</button>}
             </div>}
           </div>
 
@@ -220,19 +316,19 @@ function Home() {
 function EmptyState({ lang, onPick }: { lang: Lang; onPick: (value: string) => void }) {
   const t = copy[lang];
   return <section className="mx-auto max-w-[1240px] px-5 pb-16 sm:px-8">
-    <div className="grid gap-8 rounded-[24px] border border-border/80 bg-[#e9e7d8]/70 p-6 sm:p-9 lg:grid-cols-[1fr_340px] lg:items-center">
+    <div className="grid gap-8 rounded-[24px] border border-panel-border bg-panel p-6 sm:p-9 lg:grid-cols-[1fr_340px] lg:items-center">
       <div>
         <p className="mb-3 flex items-center gap-2 text-[10px] font-bold uppercase tracking-[.2em] text-primary"><Sparkles size={14} />{t.emptyEyebrow}</p>
-        <h2 className="font-display max-w-[620px] text-[clamp(26px,4vw,40px)] font-bold leading-tight tracking-[-.045em] text-[#163d34]">{t.emptyTitle}</h2>
+        <h2 className="font-display max-w-[620px] text-[clamp(26px,4vw,40px)] font-bold leading-tight tracking-[-.045em] text-brand-title">{t.emptyTitle}</h2>
         <p className="mt-3 max-w-[660px] text-sm leading-6 text-muted-foreground">{t.emptyText}</p>
-        <div className="mt-5 flex flex-wrap gap-2">{t.chips.map((chip) => <button type="button" key={chip} data-testid={`button-example-${chip.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`} onClick={() => onPick(chip)} className="rounded-full border border-[#c9c9b6] bg-[#f8f6ec] px-3 py-2 text-xs font-medium text-[#36594d] transition-colors hover:border-primary hover:bg-card">{chip}<ArrowUpRight size={12} className="ml-1.5 inline" /></button>)}</div>
+        <div className="mt-5 flex flex-wrap gap-2">{t.chips.map((chip) => <button type="button" key={chip} data-testid={`button-example-${chip.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`} onClick={() => onPick(chip)} className="rounded-full border border-panel-border bg-panel-card px-3 py-2 text-xs font-medium text-foreground transition-colors hover:border-primary hover:bg-card">{chip}<ArrowUpRight size={12} className="ml-1.5 inline" /></button>)}</div>
       </div>
-      <div className="rounded-2xl border border-[#d4d1c0] bg-[#f7f5eb] p-5">
+      <div className="rounded-2xl border border-panel-border bg-panel-card p-5">
         <h3 className="mb-4 text-[11px] font-bold uppercase tracking-[.14em] text-muted-foreground">{t.howTitle}</h3>
         <div className="space-y-4">
           {[[t.step1, t.step1d, TrendingUp], [t.step2, t.step2d, BookOpen], [t.step3, t.step3d, Wallet]].map(([title, desc, Icon], i) => {
             const StepIcon = Icon as typeof TrendingUp;
-            return <div className="flex gap-3" key={String(title)}><span className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-[#e3e8da] text-primary"><StepIcon size={17} /></span><div><p className="text-sm font-bold">{String(title)}</p><p className="mt-0.5 text-xs text-muted-foreground">{String(desc)}</p></div>{i < 2 && <span className="sr-only">→</span>}</div>;
+            return <div className="flex gap-3" key={String(title)}><span className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-surface-step text-primary"><StepIcon size={17} /></span><div><p className="text-sm font-bold">{String(title)}</p><p className="mt-0.5 text-xs text-muted-foreground">{String(desc)}</p></div>{i < 2 && <span className="sr-only">→</span>}</div>;
           })}
         </div>
       </div>
@@ -242,7 +338,7 @@ function EmptyState({ lang, onPick }: { lang: Lang; onPick: (value: string) => v
 
 function LoadingState({ lang }: { lang: Lang }) {
   return <section aria-live="polite" data-testid="status-research-loading" className="mx-auto max-w-[1240px] px-5 pb-16 sm:px-8">
-    <div className="mb-5 flex items-center gap-3"><span className="grid h-10 w-10 place-items-center rounded-full bg-[#e2e8d8] text-primary"><LoaderCircle size={18} className="animate-spin" /></span><div><p className="text-sm font-bold">{lang === 'hi' ? 'बाज़ार के sources खंगाले जा रहे हैं' : 'Searching the market sources'}</p><p className="text-xs text-muted-foreground">{lang === 'hi' ? 'स्रोतों को जोड़कर brief तैयार हो रहा है…' : 'Connecting the evidence into a brief…'}</p></div></div>
+    <div className="mb-5 flex items-center gap-3"><span className="grid h-10 w-10 place-items-center rounded-full bg-surface-step text-primary"><LoaderCircle size={18} className="animate-spin" /></span><div><p className="text-sm font-bold">{lang === 'hi' ? 'बाज़ार के sources खंगाले जा रहे हैं' : 'Searching the market sources'}</p><p className="text-xs text-muted-foreground">{lang === 'hi' ? 'स्रोतों को जोड़कर brief तैयार हो रहा है…' : 'Connecting the evidence into a brief…'}</p></div></div>
     <div className="grid gap-4 lg:grid-cols-[1fr_300px]"><div className="space-y-4"><div className="skeleton h-36 rounded-2xl" /><div className="grid gap-4 sm:grid-cols-2"><div className="skeleton h-44 rounded-2xl" /><div className="skeleton h-44 rounded-2xl" /></div><div className="skeleton h-52 rounded-2xl" /></div><div className="skeleton h-72 rounded-2xl" /></div>
   </section>;
 }
@@ -250,18 +346,18 @@ function LoadingState({ lang }: { lang: Lang }) {
 function Confidence({ value, lang }: { value: string; lang: Lang }) {
   const t = copy[lang];
   const label = ({ high: t.high, medium: t.medium, low: t.low } as Record<string, string>)[value] || value;
-  return <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[10px] font-bold ${value === 'high' ? 'bg-[#deeadb] text-[#285640]' : value === 'medium' ? 'bg-[#f2e9cf] text-[#735a25]' : 'bg-[#eee4dd] text-[#80523a]'}`}><span className="h-1.5 w-1.5 rounded-full bg-current" />{t.confidence}: {label}</span>;
+  return <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[10px] font-bold ${value === 'high' ? 'bg-surface-success text-success-ink' : value === 'medium' ? 'bg-surface-warning text-warning-ink' : 'bg-surface-risk text-risk-ink'}`}><span className="h-1.5 w-1.5 rounded-full bg-current" />{t.confidence}: {label}</span>;
 }
 
 function Citations({ ids, report, lang }: { ids: string[]; report: ResearchReport; lang: Lang }) {
   if (!ids?.length) return null;
   const sources = ids.map((id) => report.sources?.find((source) => source.id === id)).filter((source): source is NonNullable<typeof source> => Boolean(source));
   if (!sources.length) return null;
-  return <div className="mt-3 flex flex-wrap gap-1.5">{sources.map((source) => <a key={source.id} href={source.url} target="_blank" rel="noreferrer" data-testid={`link-citation-${source.id}`} title={source.title} className="inline-flex max-w-full items-center gap-1 rounded-md border border-[#dedbcd] bg-[#f5f2e8] px-2 py-1 text-[10px] font-medium text-[#31594b] no-underline hover:border-primary hover:bg-white"><ExternalLink size={10} /><span className="max-w-[180px] truncate">{source.domain || source.title}</span></a>)}</div>;
+  return <div className="mt-3 flex flex-wrap gap-1.5">{sources.map((source) => <a key={source.id} href={source.url} target="_blank" rel="noreferrer" data-testid={`link-citation-${source.id}`} title={source.title} className="inline-flex max-w-full items-center gap-1 rounded-md border border-panel-border bg-surface-citation px-2 py-1 text-[10px] font-medium text-foreground no-underline hover:border-primary hover:bg-panel-card"><ExternalLink size={10} /><span className="max-w-[180px] truncate">{source.domain || source.title}</span></a>)}</div>;
 }
 
 function SectionTitle({ icon: Icon, children, count }: { icon: typeof TrendingUp; children: string; count?: number }) {
-  return <div className="mb-4 flex items-center justify-between"><h2 className="flex items-center gap-2.5 text-[14px] font-bold tracking-[-.01em]"><span className="grid h-7 w-7 place-items-center rounded-lg bg-[#e5e9dc] text-primary"><Icon size={15} /></span>{children}</h2>{count !== undefined && <span className="font-mono text-[10px] text-muted-foreground">{String(count).padStart(2, '0')}</span>}</div>;
+  return <div className="mb-4 flex items-center justify-between"><h2 className="flex items-center gap-2.5 text-[14px] font-bold tracking-[-.01em]"><span className="grid h-7 w-7 place-items-center rounded-lg bg-surface-step text-primary"><Icon size={15} /></span>{children}</h2>{count !== undefined && <span className="font-mono text-[10px] text-muted-foreground">{String(count).padStart(2, '0')}</span>}</div>;
 }
 
 function ReportView({ report, lang, onNew, onCopy, copied }: { report: ResearchReport; lang: Lang; onNew: () => void; onCopy: () => void; copied: boolean }) {
@@ -279,8 +375,8 @@ function ReportView({ report, lang, onNew, onCopy, copied }: { report: ResearchR
         <button type="button" data-testid="button-new-research" onClick={onNew} className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-2 text-xs font-bold text-primary-foreground hover:opacity-90"><Search size={14} />{t.newSearch}</button>
       </div>
     </div>
-    {!sources.length && <div role="status" data-testid="status-partial-sources" className="mb-5 flex gap-3 rounded-xl border border-[#e3c894] bg-[#fbf2d9] p-4 text-[#684f20]"><CircleAlert size={18} className="mt-0.5 shrink-0" /><div><p className="text-sm font-bold">{lang === 'hi' ? 'स्रोत सीमित हैं' : 'Sources are limited'}</p><p className="mt-1 text-xs leading-5">{t.noSources}</p></div></div>}
-    {sources.length > 0 && sources.length < 3 && <div role="status" data-testid="status-partial-sources" className="mb-5 flex gap-2 rounded-xl border border-[#e3c894] bg-[#fbf2d9] px-4 py-3 text-xs leading-5 text-[#684f20]"><CircleAlert size={15} className="mt-0.5 shrink-0" />{lang === 'hi' ? `कम स्रोत मिले (${sources.length}) — कुछ निष्कर्ष कमज़ोर evidence पर आधारित हो सकते हैं।` : `Only ${sources.length} source${sources.length === 1 ? '' : 's'} found — some findings may have limited evidence.`}</div>}
+    {!sources.length && <div role="status" data-testid="status-partial-sources" className="mb-5 flex gap-3 rounded-xl border border-warning-ink/40 bg-surface-warning p-4 text-warning-ink"><CircleAlert size={18} className="mt-0.5 shrink-0" /><div><p className="text-sm font-bold">{lang === 'hi' ? 'स्रोत सीमित हैं' : 'Sources are limited'}</p><p className="mt-1 text-xs leading-5">{t.noSources}</p></div></div>}
+    {sources.length > 0 && sources.length < 3 && <div role="status" data-testid="status-partial-sources" className="mb-5 flex gap-2 rounded-xl border border-warning-ink/40 bg-surface-warning px-4 py-3 text-xs leading-5 text-warning-ink"><CircleAlert size={15} className="mt-0.5 shrink-0" />{lang === 'hi' ? `कम स्रोत मिले (${sources.length}) — कुछ निष्कर्ष कमज़ोर evidence पर आधारित हो सकते हैं।` : `Only ${sources.length} source${sources.length === 1 ? '' : 's'} found — some findings may have limited evidence.`}</div>}
 
     <div className="grid items-start gap-5 lg:grid-cols-[minmax(0,1fr)_318px]">
       <div className="space-y-5">
@@ -294,15 +390,15 @@ function ReportView({ report, lang, onNew, onCopy, copied }: { report: ResearchR
         <div className="grid gap-5 md:grid-cols-2">
           <article className="rounded-2xl border border-border bg-card p-5 sm:p-6">
             <SectionTitle icon={Globe2}>{t.marketSize}</SectionTitle>
-            <p className="font-display text-[25px] font-bold leading-tight tracking-[-.04em] text-[#244c3f]">{report.marketSize?.estimate || '—'}</p>
-            <span className="mt-3 inline-flex rounded-full bg-[#f4e8cc] px-2.5 py-1 text-[10px] font-bold text-[#76571f]">{t.estimate}</span>
+            <p className="font-display text-[25px] font-bold leading-tight tracking-[-.04em] text-brand-title">{report.marketSize?.estimate || '—'}</p>
+            <span className="mt-3 inline-flex rounded-full bg-surface-warning px-2.5 py-1 text-[10px] font-bold text-warning-ink">{t.estimate}</span>
             <p className="mt-3 text-xs leading-5 text-muted-foreground">{report.marketSize?.caveat || t.estimateNote}</p>
             <div className="mt-3"><Confidence value={report.marketSize?.confidence || 'low'} lang={lang} /></div>
             <Citations ids={report.marketSize?.sourceIds || []} report={report} lang={lang} />
           </article>
           <article className="rounded-2xl border border-border bg-card p-5 sm:p-6">
             <SectionTitle icon={Wallet}>{t.profit}</SectionTitle>
-            <div className="flex items-baseline justify-between gap-3"><span className="rounded-full bg-[#deeadb] px-2.5 py-1 text-xs font-bold text-[#285640]">{verdict}</span>{report.profitability?.grossMarginPercent !== null && report.profitability?.grossMarginPercent !== undefined && <span className="font-mono text-xl font-medium text-[#244c3f]">{report.profitability.grossMarginPercent}%</span>}</div>
+            <div className="flex items-baseline justify-between gap-3"><span className="rounded-full bg-surface-success px-2.5 py-1 text-xs font-bold text-success-ink">{verdict}</span>{report.profitability?.grossMarginPercent !== null && report.profitability?.grossMarginPercent !== undefined && <span className="font-mono text-xl font-medium text-brand-title">{report.profitability.grossMarginPercent}%</span>}</div>
             <p className="mt-3 text-xs leading-5 text-muted-foreground">{report.profitability?.summary}</p>
             {report.profitability?.grossMarginPercent !== null && report.profitability?.grossMarginPercent !== undefined && <p className="mt-2 text-[10px] leading-4 text-muted-foreground">{report.profitability.calculationNote || t.marginNote}</p>}
             {!!report.profitability?.directCostDrivers?.length && <><p className="mt-4 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">{lang === 'hi' ? 'Direct cost drivers' : 'Direct cost drivers'}</p><div className="mt-2 flex flex-wrap gap-1.5">{report.profitability.directCostDrivers.map((driver, i) => <span key={`${driver}-${i}`} className="rounded-md bg-muted px-2 py-1 text-[10px]">{driver}</span>)}</div></>}
@@ -321,19 +417,31 @@ function ReportView({ report, lang, onNew, onCopy, copied }: { report: ResearchR
 
         <article className="rounded-2xl border border-border bg-card p-5 sm:p-6">
           <SectionTitle icon={ShieldCheck} count={report.customerNeeds?.length || 0}>{t.customer}</SectionTitle>
-          {report.customerNeeds?.length ? <div className="grid gap-3 sm:grid-cols-2">{report.customerNeeds.map((item, i) => <div key={`${item.need}-${i}`} className="rounded-xl bg-[#f1f0e6] p-4"><p className="text-sm font-bold">{item.need}</p><p className="mt-2 text-xs leading-5 text-muted-foreground">{item.evidence}</p><Citations ids={item.sourceIds} report={report} lang={lang} /></div>)}</div> : <p className="text-sm text-muted-foreground">{t.noNeeds}</p>}
+          {report.customerNeeds?.length ? <div className="grid gap-3 sm:grid-cols-2">{report.customerNeeds.map((item, i) => <div key={`${item.need}-${i}`} className="rounded-xl bg-surface-soft p-4"><p className="text-sm font-bold">{item.need}</p><p className="mt-2 text-xs leading-5 text-muted-foreground">{item.evidence}</p><Citations ids={item.sourceIds} report={report} lang={lang} /></div>)}</div> : <p className="text-sm text-muted-foreground">{t.noNeeds}</p>}
         </article>
 
         <div className="grid gap-5 md:grid-cols-2">
-          <article className="rounded-2xl border border-[#cbd8c3] bg-[#edf1e6] p-5 sm:p-6">
+          <article className="rounded-2xl border border-panel-border bg-surface-opportunity p-5 sm:p-6">
             <SectionTitle icon={ArrowUpRight} count={report.opportunities?.length || 0}>{t.opportunities}</SectionTitle>
             {report.opportunities?.length ? <div className="space-y-4">{report.opportunities.map((item, i) => <div key={`${item.opportunity}-${i}`} className="border-l-2 border-primary/50 pl-3"><p className="text-sm font-bold">{item.opportunity}</p><p className="mt-1 text-xs leading-5 text-muted-foreground">{item.rationale}</p><Citations ids={item.sourceIds} report={report} lang={lang} /></div>)}</div> : <p className="text-sm text-muted-foreground">{t.noOpps}</p>}
           </article>
-          <article className="rounded-2xl border border-[#e4cec0] bg-[#f5ebe3] p-5 sm:p-6">
+          <article className="rounded-2xl border border-risk-border bg-surface-risk p-5 sm:p-6">
             <SectionTitle icon={CircleAlert} count={report.risks?.length || 0}>{t.risks}</SectionTitle>
-            {report.risks?.length ? <div className="space-y-4">{report.risks.map((item, i) => <div key={`${item.risk}-${i}`} className="border-l-2 border-[#b46c49]/50 pl-3"><div className="flex flex-wrap items-center justify-between gap-2"><p className="text-sm font-bold">{item.risk}</p><span className="rounded-full bg-white/70 px-2 py-0.5 text-[9px] font-bold uppercase text-[#80523a]">{t.severity}: {({ high: t.high, medium: t.medium, low: t.low } as Record<string, string>)[item.severity] || item.severity}</span></div><p className="mt-1 text-xs leading-5 text-muted-foreground">{item.rationale}</p><Citations ids={item.sourceIds} report={report} lang={lang} /></div>)}</div> : <p className="text-sm text-muted-foreground">{t.noRisks}</p>}
+            {report.risks?.length ? <div className="space-y-4">{report.risks.map((item, i) => <div key={`${item.risk}-${i}`} className="border-l-2 border-risk-ink/50 pl-3"><div className="flex flex-wrap items-center justify-between gap-2"><p className="text-sm font-bold">{item.risk}</p><span className="rounded-full bg-card/80 px-2 py-0.5 text-[9px] font-bold uppercase text-risk-ink">{t.severity}: {({ high: t.high, medium: t.medium, low: t.low } as Record<string, string>)[item.severity] || item.severity}</span></div><p className="mt-1 text-xs leading-5 text-muted-foreground">{item.rationale}</p><Citations ids={item.sourceIds} report={report} lang={lang} /></div>)}</div> : <p className="text-sm text-muted-foreground">{t.noRisks}</p>}
           </article>
         </div>
+
+        <article className="rounded-2xl border border-border bg-card p-5 sm:p-6">
+          <SectionTitle icon={Check} count={report.validationPlan?.length || 0}>{t.validationPlan}</SectionTitle>
+          <p className="mb-4 text-xs leading-5 text-muted-foreground">{t.validationNote}</p>
+          {report.validationPlan?.length ? <div className="grid gap-3 md:grid-cols-3">{report.validationPlan.map((item, i) => <div key={`${item.hypothesis}-${i}`} className="rounded-xl border border-panel-border bg-panel-card p-4">
+            <span className="font-mono text-[10px] font-bold text-primary">{String(i + 1).padStart(2, '0')}</span>
+            <p className="mt-2 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">{t.validationHypothesis}</p>
+            <p className="mt-1 text-sm font-bold">{item.hypothesis}</p>
+            <p className="mt-3 text-xs leading-5 text-muted-foreground"><span className="font-bold text-foreground">{t.validationTest}: </span>{item.test}</p>
+            <p className="mt-2 text-xs leading-5 text-muted-foreground"><span className="font-bold text-foreground">{t.validationSignal}: </span>{item.successSignal}</p>
+          </div>)}</div> : <p className="text-sm text-muted-foreground">{lang === 'hi' ? 'इस report में validation plan उपलब्ध नहीं है।' : 'No validation plan is available for this report.'}</p>}
+        </article>
 
         <article className="rounded-2xl border border-border bg-card p-5 sm:p-6">
           <SectionTitle icon={CircleAlert}>{t.limitations}</SectionTitle>
@@ -343,14 +451,14 @@ function ReportView({ report, lang, onNew, onCopy, copied }: { report: ResearchR
 
       <aside className="lg:sticky lg:top-5">
         <div className="overflow-hidden rounded-2xl border border-border bg-card">
-          <div className="flex items-center justify-between border-b border-border px-5 py-4"><h2 className="flex items-center gap-2 text-sm font-bold"><BookOpen size={15} className="text-primary" />{t.sourceDesk}</h2><span data-testid="text-source-count" className="rounded-full bg-[#e5e9dc] px-2 py-1 font-mono text-[10px] text-primary">{sources.length} {t.sources}</span></div>
+          <div className="flex items-center justify-between border-b border-border px-5 py-4"><h2 className="flex items-center gap-2 text-sm font-bold"><BookOpen size={15} className="text-primary" />{t.sourceDesk}</h2><span data-testid="text-source-count" className="rounded-full bg-surface-step px-2 py-1 font-mono text-[10px] text-primary">{sources.length} {t.sources}</span></div>
           {sources.length ? <div className="max-h-[570px] divide-y divide-border overflow-auto">{sources.map((source, i) => <article key={source.id} data-testid={`card-source-${source.id}`} className="p-4">
             <div className="mb-2 flex items-center justify-between gap-2"><span className="font-mono text-[10px] text-accent">S{String(i + 1).padStart(2, '0')}</span><span className="truncate text-[10px] font-semibold text-muted-foreground">{source.domain}</span></div>
             <a href={source.url} target="_blank" rel="noreferrer" className="group text-xs font-bold leading-5 text-foreground no-underline hover:text-primary" data-testid={`link-source-${source.id}`}>{source.title}<ExternalLink size={11} className="ml-1 inline opacity-50 group-hover:opacity-100" /></a>
             <p className="mt-2 line-clamp-4 text-[11px] leading-[1.65] text-muted-foreground">{source.excerpt}</p>
             <p className="mt-2 text-[9px] text-muted-foreground">{source.publishedDate || t.noPublishedDate}</p>
-          </article>)}</div> : <div className="p-5"><div className="mb-3 grid h-10 w-10 place-items-center rounded-xl bg-[#f4e8cc] text-[#76571f]"><CircleAlert size={18} /></div><p className="text-xs font-bold">{lang === 'hi' ? 'स्रोत उपलब्ध नहीं' : 'No sources available'}</p><p className="mt-1 text-[11px] leading-5 text-muted-foreground">{t.noSources}</p></div>}
-          <div className="border-t border-border bg-[#f3f1e7] px-4 py-3 text-[10px] leading-4 text-muted-foreground">{lang === 'hi' ? 'स्रोतों के snippets मूल प्रकाशक से लिए गए हैं। किसी भी निवेश निर्णय से पहले स्रोत खोलकर जाँचें।' : 'Source excerpts come from the original publisher. Open and verify them before making investment decisions.'}</div>
+          </article>)}</div> : <div className="p-5"><div className="mb-3 grid h-10 w-10 place-items-center rounded-xl bg-surface-warning text-warning-ink"><CircleAlert size={18} /></div><p className="text-xs font-bold">{lang === 'hi' ? 'स्रोत उपलब्ध नहीं' : 'No sources available'}</p><p className="mt-1 text-[11px] leading-5 text-muted-foreground">{t.noSources}</p></div>}
+          <div className="border-t border-border bg-surface-soft px-4 py-3 text-[10px] leading-4 text-muted-foreground">{lang === 'hi' ? 'स्रोतों के snippets मूल प्रकाशक से लिए गए हैं। किसी भी निवेश निर्णय से पहले स्रोत खोलकर जाँचें।' : 'Source excerpts come from the original publisher. Open and verify them before making investment decisions.'}</div>
         </div>
       </aside>
     </div>

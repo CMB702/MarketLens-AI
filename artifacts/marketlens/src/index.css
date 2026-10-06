@@ -23,6 +23,23 @@
   --color-accent-foreground: hsl(var(--accent-foreground));
   --color-destructive: hsl(var(--destructive));
   --color-destructive-foreground: hsl(var(--destructive-foreground));
+  --color-brand-title: hsl(var(--brand-title));
+  --color-accent-title: hsl(var(--accent-title));
+  --color-panel: hsl(var(--panel));
+  --color-panel-card: hsl(var(--panel-card));
+  --color-panel-border: hsl(var(--panel-border));
+  --color-surface-soft: hsl(var(--surface-soft));
+  --color-surface-step: hsl(var(--surface-step));
+  --color-surface-success: hsl(var(--surface-success));
+  --color-success-ink: hsl(var(--success-ink));
+  --color-surface-warning: hsl(var(--surface-warning));
+  --color-warning-ink: hsl(var(--warning-ink));
+  --color-surface-opportunity: hsl(var(--surface-opportunity));
+  --color-surface-risk: hsl(var(--surface-risk));
+  --color-risk-ink: hsl(var(--risk-ink));
+  --color-risk-border: hsl(var(--risk-border));
+  --color-surface-citation: hsl(var(--surface-citation));
+  --color-surface-source: hsl(var(--surface-source));
   --font-sans: var(--app-font-sans);
   --font-mono: var(--app-font-mono);
   --radius-sm: calc(var(--radius) - 4px);
@@ -64,6 +81,23 @@
   --chart-4: 11 48% 56%;
   --chart-5: 80 25% 48%;
   --shadow-sm: 0 10px 30px hsl(171 28% 15% / .06);
+  --brand-title: 171 40% 23%;
+  --accent-title: 24 59% 46%;
+  --panel: 45 28% 91%;
+  --panel-card: 45 35% 97%;
+  --panel-border: 39 21% 81%;
+  --surface-soft: 44 23% 91%;
+  --surface-step: 97 23% 91%;
+  --surface-success: 102 29% 90%;
+  --success-ink: 150 37% 24%;
+  --surface-warning: 43 67% 90%;
+  --warning-ink: 42 53% 27%;
+  --surface-opportunity: 94 28% 92%;
+  --surface-risk: 24 42% 93%;
+  --risk-ink: 20 40% 35%;
+  --risk-border: 22 36% 83%;
+  --surface-citation: 44 27% 94%;
+  --surface-source: 86 26% 92%;
 }
 
 .dark {
@@ -94,6 +128,23 @@
   --chart-3: 195 45% 61%;
   --chart-4: 11 60% 65%;
   --chart-5: 80 36% 61%;
+  --brand-title: 43 32% 93%;
+  --accent-title: 32 78% 67%;
+  --panel: 169 21% 16%;
+  --panel-card: 170 20% 18%;
+  --panel-border: 168 16% 27%;
+  --surface-soft: 168 18% 19%;
+  --surface-step: 165 19% 19%;
+  --surface-success: 151 30% 21%;
+  --success-ink: 142 47% 75%;
+  --surface-warning: 39 35% 23%;
+  --warning-ink: 40 62% 77%;
+  --surface-opportunity: 155 24% 20%;
+  --surface-risk: 13 25% 22%;
+  --risk-ink: 16 52% 77%;
+  --risk-border: 12 27% 35%;
+  --surface-citation: 169 20% 19%;
+  --surface-source: 151 24% 20%;
 }
 
 * { box-sizing: border-box; }

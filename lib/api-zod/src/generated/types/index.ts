@@ -24,3 +24,4 @@ export * from './researchInput';
 export * from './researchInputLanguage';
 export * from './researchReport';
 export * from './researchSource';
+export * from './validationTest';

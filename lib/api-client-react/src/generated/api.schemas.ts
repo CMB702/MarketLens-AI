@@ -156,6 +156,12 @@ export interface Profitability {
   currency: string;
 }
 
+export interface ValidationTest {
+  hypothesis: string;
+  test: string;
+  successSignal: string;
+}
+
 export interface ResearchReport {
   id: string;
   subject: string;
@@ -170,6 +176,11 @@ export interface ResearchReport {
   opportunities: Opportunity[];
   risks: MarketRisk[];
   profitability: Profitability;
+  /**
+     * @minItems 3
+     * @maxItems 3
+     */
+  validationPlan: ValidationTest[];
   sources: ResearchSource[];
   limitations: string[];
 }

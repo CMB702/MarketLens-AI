@@ -47,6 +47,11 @@ export const CreateResearchBody = zod.object({
   "directCost": zod.number().min(createResearchBodyDirectCostMin).optional()
 })
 
+export const createResearchResponseValidationPlanMin = 3;
+export const createResearchResponseValidationPlanMax = 3;
+
+
+
 export const CreateResearchResponse = zod.object({
   "id": zod.string(),
   "subject": zod.string(),
@@ -98,6 +103,11 @@ export const CreateResearchResponse = zod.object({
   "calculationNote": zod.string(),
   "currency": zod.string()
 }),
+  "validationPlan": zod.array(zod.object({
+  "hypothesis": zod.string(),
+  "test": zod.string(),
+  "successSignal": zod.string()
+})).min(createResearchResponseValidationPlanMin).max(createResearchResponseValidationPlanMax),
   "sources": zod.array(zod.object({
   "id": zod.string(),
   "title": zod.string(),

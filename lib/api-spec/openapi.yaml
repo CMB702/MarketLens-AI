@@ -256,6 +256,17 @@ components:
         - grossMarginPercent
         - calculationNote
         - currency
+    ValidationTest:
+      type: object
+      additionalProperties: false
+      properties:
+        hypothesis:
+          type: string
+        test:
+          type: string
+        successSignal:
+          type: string
+      required: [hypothesis, test, successSignal]
     ResearchReport:
       type: object
       additionalProperties: false
@@ -295,6 +306,12 @@ components:
             $ref: "#/components/schemas/MarketRisk"
         profitability:
           $ref: "#/components/schemas/Profitability"
+        validationPlan:
+          type: array
+          minItems: 3
+          maxItems: 3
+          items:
+            $ref: "#/components/schemas/ValidationTest"
         sources:
           type: array
           items:
@@ -317,6 +334,7 @@ components:
         - opportunities
         - risks
         - profitability
+        - validationPlan
         - sources
         - limitations
 

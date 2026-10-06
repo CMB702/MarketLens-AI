@@ -13,6 +13,7 @@ import type { MarketSize } from './marketSize';
 import type { Opportunity } from './opportunity';
 import type { Profitability } from './profitability';
 import type { ResearchSource } from './researchSource';
+import type { ValidationTest } from './validationTest';
 
 export interface ResearchReport {
   id: string;
@@ -28,6 +29,11 @@ export interface ResearchReport {
   opportunities: Opportunity[];
   risks: MarketRisk[];
   profitability: Profitability;
+  /**
+     * @minItems 3
+     * @maxItems 3
+     */
+  validationPlan: ValidationTest[];
   sources: ResearchSource[];
   limitations: string[];
 }

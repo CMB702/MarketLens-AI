@@ -68,6 +68,11 @@ type ReportDraft = {
     directCostDrivers: string[];
     sourceIds: string[];
   };
+  validationPlan: Array<{
+    hypothesis: string;
+    test: string;
+    successSignal: string;
+  }>;
   limitations: string[];
 };
 
@@ -84,6 +89,7 @@ const reportSchema = {
     "opportunities",
     "risks",
     "profitability",
+    "validationPlan",
     "limitations",
   ],
   properties: {
@@ -187,6 +193,21 @@ const reportSchema = {
         sourceIds: { type: "array", items: { type: "string" } },
       },
     },
+    validationPlan: {
+      type: "array",
+      minItems: 3,
+      maxItems: 3,
+      items: {
+        type: "object",
+        additionalProperties: false,
+        required: ["hypothesis", "test", "successSignal"],
+        properties: {
+          hypothesis: { type: "string" },
+          test: { type: "string" },
+          successSignal: { type: "string" },
+        },
+      },
+    },
     limitations: { type: "array", items: { type: "string" } },
   },
 } as const;
@@ -198,6 +219,8 @@ function toGeminiSchema(schema: unknown): Record<string, unknown> {
     items?: unknown;
     required?: readonly string[];
     enum?: readonly string[];
+    minItems?: number;
+    maxItems?: number;
   };
   const output: Record<string, unknown> = {};
 
@@ -213,6 +236,8 @@ function toGeminiSchema(schema: unknown): Record<string, unknown> {
   if (value.items) output.items = toGeminiSchema(value.items);
   if (value.required) output.required = [...value.required];
   if (value.enum) output.enum = [...value.enum];
+  if (value.minItems !== undefined) output.minItems = value.minItems;
+  if (value.maxItems !== undefined) output.maxItems = value.maxItems;
 
   return output;
 }
@@ -392,6 +417,7 @@ router.post("/research", async (req, res): Promise<void> => {
                   "If customer feedback is missing, label customer needs as hypotheses and say they require validation.",
                   "Describe opportunities and risks as possibilities, not guarantees.",
                   "Profitability verdict is qualitative only. Never promise future profit. Include major direct-cost drivers and clearly state what evidence is missing.",
+                  "Include exactly three items in validationPlan. Each must name an unverified hypothesis, a concrete free or low-cost test that can be done before buying inventory or paying for ads, and an observable success signal. Do not invent a money amount or present a hypothesis as a fact. Tailor tests to the idea and country.",
                   "If the search results are weak or off-topic, state that in limitations instead of filling gaps with guesses.",
                   "Return one JSON object matching this schema exactly:",
                   JSON.stringify(reportSchema),
@@ -538,6 +564,14 @@ router.post("/research", async (req, res): Promise<void> => {
             ? "Add a selling price and direct cost per sale to calculate gross margin. Any estimate excludes fixed costs, taxes, marketing, and other fees."
             : `Gross margin before fixed costs and fees: (${input.sellingPrice} - ${input.directCost}) / ${input.sellingPrice} × 100. Uses your inputs; it is not a profit forecast.`,
       },
+      validationPlan: (draft.validationPlan ?? []).slice(0, 3).map((item) => ({
+        hypothesis: textValue(item.hypothesis, "Hypothesis to validate"),
+        test: textValue(item.test, "Test before making a larger investment"),
+        successSignal: textValue(
+          item.successSignal,
+          "Define a clear signal before running the test",
+        ),
+      })),
       sources,
       limitations: Array.isArray(draft.limitations)
         ? draft.limitations.slice(0, 6)
