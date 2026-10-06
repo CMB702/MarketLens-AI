@@ -1,0 +1,1 @@
+- [MarketLens free-tier rule](marketlens-free-tier-rule.md) — Keep MarketLens on free provider tiers; never enable billing or use paid fallbacks.
